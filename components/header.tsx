@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Search, LogOut, LogIn, X } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { LogoWithText } from "@/components/logo"
+import { CoinBadge } from "@/components/coin-badge"
 
 interface HeaderProps {
   user: SupabaseUser | null
@@ -11,9 +12,10 @@ interface HeaderProps {
   onLogin: () => void
   searchQuery: string
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  coins?: number
 }
 
-export default function Header({ user, onLogout, onLogin, searchQuery, onSearchChange }: HeaderProps) {
+export default function Header({ user, onLogout, onLogin, searchQuery, onSearchChange, coins }: HeaderProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   const getUserInitials = () => {
@@ -62,6 +64,9 @@ export default function Header({ user, onLogout, onLogin, searchQuery, onSearchC
             )}
           </div>
         )}
+
+        {/* Coins Badge */}
+        {user && coins !== undefined && <CoinBadge coins={coins} />}
 
         {/* Profile Dropdown or Login Button */}
         {user ? (

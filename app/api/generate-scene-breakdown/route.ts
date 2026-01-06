@@ -51,6 +51,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check and deduct 1 coin
+    const { data: userData, error: fetchError } = await supabase
+      .from('users')
+      .select('coins')
+      .eq('id', idea.user_id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching user:', fetchError);
+      return NextResponse.json(
+        { error: 'Failed to fetch user data' },
+        { status: 500 }
+      );
+    }
+
+    const currentCoins = userData?.coins || 0;
+
+    // Check if user has enough coins
+    if (currentCoins < 1) {
+      return NextResponse.json(
+        { error: 'Insufficient coins. You need at least 1 coin to generate scene breakdown.' },
+        { status: 402 }
+      );
+    }
+
+    // Deduct 1 coin
+    const { error: coinUpdateError } = await supabase
+      .from('users')
+      .update({ coins: currentCoins - 1 })
+      .eq('id', idea.user_id);
+
+    if (coinUpdateError) {
+      console.error('Error deducting coins:', coinUpdateError);
+      return NextResponse.json(
+        { error: 'Failed to deduct coins' },
+        { status: 500 }
+      );
+    }
+
     // Generate scene breakdown with custom config
     const content = await generateSceneBreakdown(script, language, customPrompt, patterns);
 
@@ -81,7 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update ideas table
-    const { error: updateError } = await supabase
+    const { error: ideaUpdateError } = await supabase
       .from('ideas')
       .update({
         scene_breakdown: content,
@@ -89,14 +128,15 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', ideaId);
 
-    if (updateError) {
-      console.error('Failed to update idea:', updateError);
-      throw updateError;
+    if (ideaUpdateError) {
+      console.error('Failed to update idea:', ideaUpdateError);
+      throw ideaUpdateError;
     }
 
     return NextResponse.json({
       success: true,
       content,
+      coins: currentCoins - 1,
     });
 
   } catch (error: any) {

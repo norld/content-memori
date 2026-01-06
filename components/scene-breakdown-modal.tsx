@@ -21,7 +21,7 @@ export function SceneBreakdownModal({
   script,
   onClose,
 }: SceneBreakdownModalProps) {
-  const { session } = useAuth()
+  const { session, refreshCoins } = useAuth()
   const [content, setContent] = useState(initialContent)
   const [scenes, setScenes] = useState<Scene[]>(parseSceneBreakdown(initialContent))
   const [isGenerating, setIsGenerating] = useState(false)
@@ -75,12 +75,20 @@ export function SceneBreakdownModal({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
+        if (response.status === 402) {
+          setError('Koin tidak cukup. Anda memerlukan minimal 1 koin untuk generate scene breakdown.')
+        } else {
+          throw new Error(data.error || 'Generation failed')
+        }
+        return
       }
 
       setContent(data.content)
       const parsedScenes = parseSceneBreakdown(data.content)
       setScenes(parsedScenes)
+
+      // Refresh coins in auth context
+      await refreshCoins()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -192,9 +200,12 @@ export function SceneBreakdownModal({
             <div className="text-center py-12">
               <p className="text-neutral-400 mb-6">Belum ada scene breakdown. Pilih cara membuat:</p>
               <div className="flex items-center justify-center gap-3">
-                <button onClick={handleGenerate} className="flex items-center gap-2 px-6 py-3 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-medium rounded-lg border border-red-600/20 transition-colors">
-                  <SparkleIcon className="w-4 h-4" />
-                  Buat dengan AI
+                <button onClick={handleGenerate} className="flex flex-col items-center gap-2 px-6 py-4 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-medium rounded-lg border border-red-600/20 transition-colors">
+                  <span className="flex items-center gap-2">
+                    <SparkleIcon className="w-4 h-4" />
+                    Buat dengan AI
+                  </span>
+                  <span className="text-xs opacity-75">💰 1 koin</span>
                 </button>
                 <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-neutral-200 font-medium rounded-lg border border-white/10 transition-colors">
                   <Plus className="w-4 h-4" />

@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth-context"
 import { supabase, ideasTable, type Idea } from "@/lib/supabase"
 
 export default function Home() {
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, loading: authLoading, signOut, coins } = useAuth()
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null)
@@ -217,6 +217,7 @@ export default function Home() {
         onLogin={() => setShowLoginModal(true)}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
+        coins={coins}
       />
 
       <main className="relative z-10 flex-1 overflow-y-auto w-full max-w-7xl mx-auto px-6 lg:px-12 py-8 flex flex-col gap-10">
