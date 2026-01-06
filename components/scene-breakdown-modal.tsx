@@ -205,7 +205,6 @@ export function SceneBreakdownModal({
                     <SparkleIcon className="w-4 h-4" />
                     Buat dengan AI
                   </span>
-                  <span className="text-xs opacity-75">💰 1 koin</span>
                 </button>
                 <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-neutral-200 font-medium rounded-lg border border-white/10 transition-colors">
                   <Plus className="w-4 h-4" />

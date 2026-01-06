@@ -6,6 +6,10 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bGpzY3VvdW9zem9nenF6dXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1MTE2NzQsImV4cCI6MjA4MzA4NzY3NH0.PwgW-NCTRIv8bmiPWm3tmQfS941KBL2nUH5z4NlRLjQ",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://zxljscuouoszogzqzuvl.supabase.co"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
