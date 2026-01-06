@@ -52,18 +52,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Check and deduct 1 coin
-    const { data: userData, error: fetchError } = await supabase
-      .from('users')
+    let { data: userData, error: fetchError } = await supabase
+      .from('user_coins')
       .select('coins')
-      .eq('id', idea.user_id)
+      .eq('user_id', idea.user_id)
       .single();
 
-    if (fetchError) {
-      console.error('Error fetching user:', fetchError);
-      return NextResponse.json(
-        { error: 'Failed to fetch user data' },
-        { status: 500 }
-      );
+    // If no coins exist, create them with default 10 coins
+    if (fetchError || !userData) {
+      console.log('No coins found for user, creating with default 10 coins');
+
+      const { data: newData, error: insertError } = await supabase
+        .from('user_coins')
+        .insert({ user_id: idea.user_id, coins: 10 })
+        .select('coins')
+        .single();
+
+      if (insertError) {
+        console.error('Error creating user coins:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to create coins' },
+          { status: 500 }
+        );
+      }
+
+      userData = newData;
     }
 
     const currentCoins = userData?.coins || 0;
@@ -78,9 +91,9 @@ export async function POST(req: NextRequest) {
 
     // Deduct 1 coin
     const { error: coinUpdateError } = await supabase
-      .from('users')
+      .from('user_coins')
       .update({ coins: currentCoins - 1 })
-      .eq('id', idea.user_id);
+      .eq('user_id', idea.user_id);
 
     if (coinUpdateError) {
       console.error('Error deducting coins:', coinUpdateError);

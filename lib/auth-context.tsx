@@ -11,6 +11,7 @@ interface AuthContextType {
   coins: number
   refreshCoins: () => Promise<void>
   signIn: (email: string) => Promise<{ error: AuthError | null }>
+  verifyOtp: (email: string, token: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
 }
 
@@ -66,8 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false
       },
+    })
+  }
+
+  const verifyOtp = async (email: string, token: string) => {
+    return await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
     })
   }
 
@@ -82,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     coins,
     refreshCoins,
     signIn,
+    verifyOtp,
     signOut,
   }
 

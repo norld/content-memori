@@ -32,11 +32,29 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch user coins
-    const { data: userData, error } = await supabase
-      .from('users')
+    let { data: userData, error } = await supabase
+      .from('user_coins')
       .select('coins')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
+
+    // If no coins exist, create them with default 10 coins
+    if (error || !userData) {
+      console.log('No coins found for user, creating with default 10 coins');
+
+      const { data: newData, error: insertError } = await supabase
+        .from('user_coins')
+        .insert({ user_id: user.id, coins: 10 })
+        .select('coins')
+        .single();
+
+      if (insertError) {
+        console.error('Error creating user coins:', insertError);
+        return NextResponse.json({ error: 'Failed to create coins' }, { status: 500 });
+      }
+
+      userData = newData;
+    }
 
     if (error) {
       console.error('Error fetching coins:', error);
