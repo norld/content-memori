@@ -42,7 +42,7 @@ ALTER TABLE ideas
 - `scene_breakdown_generated_at` (TIMESTAMPTZ, nullable): Timestamp of last AI generation
 
 **Constraints**:
-- `scene_breakdown` maximum length: 65,535 bytes (PostgreSQL TEXT limit)
+- `scene_breakdown` can store up to 1GB (PostgreSQL TEXT limit) - typically JSON data < 100KB
 - `scene_breakdown` can be NULL (manual creation without AI generation)
 - `scene_breakdown_generated_at` NULL if manually created (no AI generation)
 - `updated_at` automatically updated via trigger on any change (including scene_breakdown edits)
@@ -106,7 +106,7 @@ CREATE POLICY "Users can delete their own history"
 
 **Constraints**:
 - `idea_id` cascade deletes history when idea is deleted
-- `content` maximum length: 65,535 bytes
+- `content` stored as TEXT (PostgreSQL limit: 1GB, typical JSON < 100KB)
 - `generated_at` defaults to current UTC timestamp
 - `version` must be managed application-side (query max version + 1)
 
@@ -304,22 +304,11 @@ export const generateSceneBreakdownSchema = z.object({
 export type GenerateSceneBreakdownInput = z.infer<typeof generateSceneBreakdownSchema>;
 
 /**
- * Scene breakdown update validation
+ * Scene breakdown update validation (JSON format)
  */
 export const updateSceneBreakdownSchema = z.object({
   ideaId: z.number().int().positive(),
-  content: z.string()
-    .max(65535, 'Content too large (max 65,535 bytes)')
-    .transform((val) => {
-      // Sanitize HTML (client-side)
-      if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(val, {
-          ALLOWED_TAGS: ['P', 'BR', 'STRONG', 'EM', 'UL', 'OL', 'LI'],
-          ALLOWED_ATTR: [],
-        });
-      }
-      return val;
-    }),
+  content: z.string(), // JSON string, validated by parseSceneBreakdown()
 });
 
 export type UpdateSceneBreakdownInput = z.infer<typeof updateSceneBreakdownSchema>;
@@ -467,9 +456,9 @@ async function restoreFromHistory(
 
 | Field | Type | Constraints | Validation |
 |-------|------|-------------|------------|
-| `ideas.scene_breakdown` | TEXT | Max 65,535 bytes | Zod max length, DOMPurify sanitization |
+| `ideas.scene_breakdown` | TEXT | JSON string, validated by parseSceneBreakdown() | Zod string, validated at application layer |
 | `ideas.scene_breakdown_generated_at` | TIMESTAMPTZ | Optional, ISO 8601 | Zod datetime, nullable |
-| `scene_breakdown_history.content` | TEXT | Max 65,535 bytes, NOT NULL | Zod max length, DOMPurify sanitization |
+| `scene_breakdown_history.content` | TEXT | JSON string (validated), NOT NULL | Zod string, validated by parseSceneBreakdown() |
 | `scene_breakdown_history.version` | INTEGER | Monotonically increasing | Application-level (max + 1) |
 | `scene_breakdown_history.user_id` | UUID | Must match `ideas.user_id` | RLS policy |
 

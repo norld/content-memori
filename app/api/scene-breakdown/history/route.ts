@@ -37,10 +37,15 @@ export async function GET(req: NextRequest) {
     });
 
     // Get total count
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('scene_breakdown_history')
       .select('*', { count: 'exact', head: true })
       .eq('idea_id', ideaId);
+
+    if (countError) {
+      console.error('Failed to get count:', countError);
+      throw countError;
+    }
 
     // Fetch history with pagination
     const { data: versions, error } = await supabase
@@ -57,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json({
       versions: versions || [],
-      total: count || 0,
+      total: count ?? 0,
     });
 
   } catch (error: any) {

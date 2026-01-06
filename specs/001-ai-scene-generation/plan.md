@@ -35,7 +35,7 @@ Add AI-powered scene breakdown generation to the Content Memori ideas management
 
 **Constraints**:
 - Must not expose OpenAI API keys to client-side code (environment variables only)
-- Scene breakdown stored as single TEXT field (max 65,535 bytes for PostgreSQL TEXT)
+- Scene breakdown stored as single TEXT field (PostgreSQL TEXT up to 1GB, typical JSON < 100KB)
 - Script content practical limit 5,000 characters (assumption #5)
 
 **Scale/Scope**:

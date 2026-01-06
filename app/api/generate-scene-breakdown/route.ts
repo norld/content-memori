@@ -51,57 +51,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check and deduct 1 coin
-    let { data: userData, error: fetchError } = await supabase
-      .from('user_coins')
-      .select('coins')
-      .eq('user_id', idea.user_id)
-      .single();
+    // Check and deduct 1 coin atomically
+    const { data: coinResult, error: coinError } = await supabase.rpc('deduct_coin_if_available', {
+      p_user_id: idea.user_id,
+    });
 
-    // If no coins exist, create them with default 10 coins
-    if (fetchError || !userData) {
-      console.log('No coins found for user, creating with default 10 coins');
-
-      const { data: newData, error: insertError } = await supabase
-        .from('user_coins')
-        .insert({ user_id: idea.user_id, coins: 10 })
-        .select('coins')
-        .single();
-
-      if (insertError) {
-        console.error('Error creating user coins:', insertError);
-        return NextResponse.json(
-          { error: 'Failed to create coins' },
-          { status: 500 }
-        );
-      }
-
-      userData = newData;
+    if (coinError) {
+      console.error('Error deducting coins:', coinError);
+      return NextResponse.json(
+        { error: 'Failed to process coin transaction' },
+        { status: 500 }
+      );
     }
 
-    const currentCoins = userData?.coins || 0;
-
-    // Check if user has enough coins
-    if (currentCoins < 1) {
+    // Check if deduction was successful
+    if (!coinResult || coinResult.length === 0 || !coinResult[0].success) {
+      const errorMessage = coinResult && coinResult[0] ? coinResult[0].error_message : 'Failed to deduct coins';
       return NextResponse.json(
-        { error: 'Insufficient coins. You need at least 1 coin to generate scene breakdown.' },
+        { error: errorMessage },
         { status: 402 }
       );
     }
 
-    // Deduct 1 coin
-    const { error: coinUpdateError } = await supabase
-      .from('user_coins')
-      .update({ coins: currentCoins - 1 })
-      .eq('user_id', idea.user_id);
-
-    if (coinUpdateError) {
-      console.error('Error deducting coins:', coinUpdateError);
-      return NextResponse.json(
-        { error: 'Failed to deduct coins' },
-        { status: 500 }
-      );
-    }
+    const newBalance = coinResult[0].new_balance;
 
     // Generate scene breakdown with custom config
     const content = await generateSceneBreakdown(script, language, customPrompt, patterns);
@@ -149,7 +121,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       content,
-      coins: currentCoins - 1,
+      coins: newBalance,
     });
 
   } catch (error: any) {

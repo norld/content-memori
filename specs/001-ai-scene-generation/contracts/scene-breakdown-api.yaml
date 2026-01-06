@@ -155,11 +155,12 @@ paths:
                   example: 123
                 content:
                   type: string
-                  maxLength: 65535
-                  description: Sanitized HTML content of the scene breakdown
+                  description: JSON string of scene breakdown array
                   example: |
-                    <p>Scene 1: Coffee Shop Interior</p>
-                    <p>The scene opens in a cozy, warm coffee shop...</p>
+                    [
+                      {"scene": 1, "location": "Coffee Shop", "camera": "Wide Shot", "action": "Character enters"},
+                      {"scene": 2, "location": "Counter", "camera": "Close-up", "action": "Orders coffee"}
+                    ]
 
       responses:
         '200':

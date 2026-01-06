@@ -178,7 +178,7 @@ export const generateSceneBreakdownSchema = z.object({
 
 export const updateSceneBreakdownSchema = z.object({
   ideaId: z.number().int().positive(),
-  content: z.string().max(65535),
+  content: z.string(), // JSON string, validated by parseSceneBreakdown()
 });
 ```
 
