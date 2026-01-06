@@ -200,7 +200,7 @@ export async function generateSceneBreakdown(
   const prompt = buildPrompt(script, language);
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
     max_tokens: 2000,
@@ -490,10 +490,10 @@ console.log('User:', user);
 
 ### Issue: Generation takes too long (>30s)
 
-**Solution**: Check OpenAI API status, try using `gpt-4o-mini` (faster than `gpt-4`):
+**Solution**: Check OpenAI API status, try using `gpt-5-nano` (faster than `gpt-4`):
 
 ```typescript
-model: 'gpt-4o-mini', // Faster, cheaper
+model: 'gpt-5-nano', // Faster, cheaper
 ```
 
 ### Issue: Real-time sync not working

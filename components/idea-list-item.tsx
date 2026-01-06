@@ -6,10 +6,9 @@ import { formatRelativeTime } from "@/lib/time"
 interface IdeaListItemProps {
   idea: Idea
   onOpen: (idea: Idea) => void
-  index: number
 }
 
-export default function IdeaListItem({ idea, onOpen, index }: IdeaListItemProps) {
+export default function IdeaListItem({ idea, onOpen }: IdeaListItemProps) {
   const timeAgo = idea.updated_at
     ? formatRelativeTime(idea.updated_at)
     : formatRelativeTime(idea.created_at || new Date().toISOString())
@@ -18,10 +17,6 @@ export default function IdeaListItem({ idea, onOpen, index }: IdeaListItemProps)
     <div
       onClick={() => onOpen(idea)}
       className="glass-panel rounded-lg px-4 py-3 hover:border-rose-500/30 hover:bg-neutral-800/30 transition-all group cursor-pointer bg-neutral-900/60 backdrop-blur-lg border border-white/5 flex items-center gap-4"
-      style={{
-        animation: `slideUp 0.3s ease-out forwards`,
-        animationDelay: `${index * 0.05}s`,
-      }}
     >
       {/* Type Indicator */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1">

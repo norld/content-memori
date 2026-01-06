@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     });
 
     const body = await req.json();
-    const { ideaId, script, language: userLanguage } = generateSceneBreakdownSchema.parse(body);
+    const { ideaId, script, language: userLanguage, customPrompt, patterns } = body;
 
     // Detect language if not provided
     const language = userLanguage || detectLanguage(script);
@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate scene breakdown
-    const content = await generateSceneBreakdown(script, language);
+    // Generate scene breakdown with custom config
+    const content = await generateSceneBreakdown(script, language, customPrompt, patterns);
 
     // Get current version number
     const { data: history } = await supabase

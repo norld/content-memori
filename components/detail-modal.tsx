@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, Trash2, Sparkles, LucideCamera } from "lucide-react"
+import { X, Trash2, Sparkles, LucideCamera, ListCheckIcon } from "lucide-react"
 import type { Idea } from "@/lib/supabase"
 import { formatRelativeTime } from "@/lib/time"
 import { SceneBreakdownModal } from "@/components/scene-breakdown-modal"
@@ -116,8 +116,8 @@ export default function DetailModal({ idea, onClose, onDelete, onUpdate }: Detai
               disabled={!description}
               className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-600/20"
             >
-              <LucideCamera className="w-3.5 h-3.5" />
-              {idea.scene_breakdown ? 'Lihat / Edit Scene Breakdown' : 'Buat Scene Breakdown'}
+              <ListCheckIcon className="w-3.5 h-3.5" />
+              Scene Breakdown
             </button>
 
             <div className="flex items-center justify-between text-[10px] text-neutral-600">

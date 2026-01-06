@@ -2,13 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Eye, RotateCcw } from 'lucide-react';
-import DOMPurify from 'dompurify';
 import { useAuth } from '@/lib/auth-context';
-import type { SceneBreakdownVersion } from '@/lib/types/scene-breakdown';
+import { parseSceneBreakdown, type Scene } from '@/lib/types/scene';
+import { SceneCard } from '@/components/scene-card';
+import { formatRelativeTime } from '@/lib/time';
+
+interface SceneBreakdownVersion {
+  id: number;
+  idea_id: number;
+  content: string;
+  generated_at: string;
+  version: number;
+}
 
 interface SceneBreakdownHistoryProps {
   ideaId: number;
-  onRestore?: () => void;
+  onRestore?: (content: string) => void;
 }
 
 export function SceneBreakdownHistory({
@@ -89,9 +98,11 @@ export function SceneBreakdownHistory({
         throw new Error(data.error || 'Failed to restore');
       }
 
-      // Trigger refresh of main content
-      if (onRestore) {
-        onRestore();
+      const data = await response.json();
+
+      // Trigger refresh of main content with restored content
+      if (onRestore && data.content) {
+        onRestore(data.content);
       }
 
       // Close the history view
@@ -100,6 +111,19 @@ export function SceneBreakdownHistory({
       setError(err.message);
     } finally {
       setRestoring(false);
+    }
+  };
+
+  const getVersionScenes = (content: string): Scene[] => {
+    return parseSceneBreakdown(content);
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Unknown';
+    try {
+      return formatRelativeTime(dateString);
+    } catch {
+      return 'Invalid date';
     }
   };
 
@@ -147,47 +171,52 @@ export function SceneBreakdownHistory({
       </h4>
 
       <div className="space-y-2 max-h-[400px] overflow-y-auto">
-        {versions.map((version) => (
-          <div
-            key={version.id}
-            className="p-3 bg-neutral-700/50 rounded-lg border border-neutral-600 hover:border-purple-500/50 transition-colors"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-purple-400">
-                    Version {version.version}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {new Date(version.generatedAt).toLocaleString()}
-                  </span>
+        {versions.map((version) => {
+          const scenes = getVersionScenes(version.content);
+          return (
+            <div
+              key={version.id}
+              className="p-3 bg-white/5 rounded-lg border border-white/5 hover:border-red-600/20 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-red-400">
+                      Version {version.version}
+                    </span>
+                    <span className="text-xs text-neutral-500">
+                      {scenes.length} scene{scenes.length !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-xs text-neutral-600">
+                      • {formatDate(version.generated_at)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-500 line-clamp-1">
+                    {scenes.length > 0 ? scenes[0].action : 'No scenes available'}
+                  </p>
                 </div>
-                <p className="text-sm text-neutral-300 line-clamp-2">
-                  {version.content.substring(0, 150)}
-                  {version.content.length > 150 && '...'}
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => setSelectedVersion(version)}
-                  className="p-2 hover:bg-neutral-600 rounded-lg transition-colors"
-                  title="View full version"
-                >
-                  <Eye size={14} className="text-neutral-400" />
-                </button>
-                <button
-                  onClick={() => handleRestore(version.version)}
-                  disabled={restoring}
-                  className="p-2 hover:bg-purple-600 rounded-lg transition-colors disabled:opacity-50"
-                  title="Restore this version"
-                >
-                  <RotateCcw size={14} className="text-neutral-400" />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setSelectedVersion(version)}
+                    className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                    title="View full version"
+                  >
+                    <Eye size={14} className="text-neutral-500" />
+                  </button>
+                  <button
+                    onClick={() => handleRestore(version.version)}
+                    disabled={restoring}
+                    className="p-2 hover:bg-red-600/10 rounded-lg transition-colors disabled:opacity-50"
+                    title="Restore this version"
+                  >
+                    <RotateCcw size={14} className="text-neutral-500 hover:text-red-400" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Version Detail Modal */}
@@ -197,47 +226,54 @@ export function SceneBreakdownHistory({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelectedVersion(null)}
           />
-          <div className="relative w-full max-w-2xl bg-neutral-800 rounded-2xl shadow-2xl border border-neutral-700 max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-700">
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Version {selectedVersion.version}
-              </h3>
+          <div className="relative w-full max-w-2xl bg-neutral-900 rounded-2xl shadow-2xl border border-white/10 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-white/5">
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-200">
+                  Version {selectedVersion.version}
+                </h3>
+                <p className="text-xs text-neutral-500 mt-1">
+                  {formatDate(selectedVersion.generated_at)}
+                </p>
+              </div>
               <button
                 onClick={() => setSelectedVersion(null)}
-                className="p-2 hover:bg-neutral-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-white"
               >
                 ✕
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              <p className="text-sm text-neutral-400 mb-4">
-                Generated: {new Date(selectedVersion.generatedAt).toLocaleString()}
-              </p>
-              <div className="prose prose-invert max-w-none">
-                {/* Sanitize content before rendering to prevent XSS */}
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(selectedVersion.content, {
-                      ALLOWED_TAGS: ['P', 'BR', 'STRONG', 'EM', 'UL', 'OL', 'LI'],
-                      ALLOWED_ATTR: [],
-                    }),
-                  }}
-                  className="text-neutral-200 whitespace-pre-wrap"
-                />
-              </div>
+              {(() => {
+                const scenes = getVersionScenes(selectedVersion.content);
+                if (scenes.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-neutral-500">
+                      No scenes available in this version
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {scenes.map((scene) => (
+                      <SceneCard key={scene.scene} scene={scene} />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
-            <div className="flex justify-end p-4 border-t border-neutral-700 bg-neutral-800/50">
+            <div className="flex justify-end p-4 border-t border-white/5 bg-neutral-900/50">
               <button
                 onClick={() => {
                   handleRestore(selectedVersion.version);
                   setSelectedVersion(null);
                 }}
                 disabled={restoring}
-                className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-600/20 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 text-xs font-medium"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={14} />
                 {restoring ? 'Restoring...' : 'Restore This Version'}
               </button>
             </div>

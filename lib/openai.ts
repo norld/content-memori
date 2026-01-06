@@ -10,16 +10,16 @@ const openai = new OpenAI({
  */
 export async function generateSceneBreakdown(
   script: string,
-  language: 'english' | 'indonesian' | 'spanish'
+  language: 'english' | 'indonesian' | 'spanish',
+  customPrompt?: string,
+  patterns?: Array<{ name: string; description: string }>
 ): Promise<string> {
-  const prompt = buildPrompt(script, language);
+  const prompt = buildPrompt(script, language, customPrompt, patterns);
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000,
+      model: 'gpt-5-nano',
+      messages: [{ role: 'user', content: prompt }]
     });
 
     return completion.choices[0].message.content || '';
@@ -34,9 +34,21 @@ export async function generateSceneBreakdown(
  */
 function buildPrompt(
   script: string,
-  language: 'english' | 'indonesian' | 'spanish'
+  language: 'english' | 'indonesian' | 'spanish',
+  customPrompt?: string,
+  patterns?: Array<{ name: string; description: string }>
 ): string {
   const isIndonesian = language === 'indonesian';
+
+  let patternsText = '';
+  if (patterns && patterns.length > 0) {
+    patternsText = `\n\n**Pola Scene yang Sering Digunakan**:\n${patterns.map(p => `- ${p.name}: ${p.description}`).join('\n')}\n\n${isIndonesian ? 'Coba sesuaikan scene breakdown dengan pola di atas' : 'Try to match the scene breakdown with these patterns'}.`;
+  }
+
+  let customPromptText = '';
+  if (customPrompt && customPrompt.trim()) {
+    customPromptText = `\n\n**Instruksi Tambahan**:\n${customPrompt}`;
+  }
 
   return `You are a professional video director. ${isIndonesian ? 'Buat' : 'Generate'} a scene breakdown for the following script.
 
@@ -45,7 +57,7 @@ ${isIndonesian ? 'Buat dalam Bahasa Indonesia' : 'Generate in English'}
 **Requirements**:
 - ${isIndonesian ? 'Buat 5-8 scene saja' : 'Create only 5-8 scenes maximum'}
 - ${isIndonesian ? 'Fokus pada: lokasi, jenis kamera, dan aksi utama' : 'Focus on: location, camera type, and main action'}
-- ${isIndonesian ? 'Jelaskan dengan ringkas dan jelas' : 'Keep descriptions brief and clear'}
+- ${isIndonesian ? 'Jelaskan dengan ringkas dan jelas' : 'Keep descriptions brief and clear'}${patternsText}${customPromptText}
 
 **IMPORTANT**: Return ONLY a JSON array. No markdown, no code blocks, just raw JSON like this:
 [

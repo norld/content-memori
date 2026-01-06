@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      content: historyEntry.content,
     });
 
   } catch (error: any) {

@@ -223,7 +223,7 @@ export async function POST(req: Request) {
   try {
     // Streaming generation
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Cost-effective, fast
+      model: 'gpt-5-nano', // Cost-effective, fast
       messages: [{ role: 'user', content: prompt }],
       stream: true,
       timeout: 30000, // 30s max
@@ -401,7 +401,7 @@ async function generateWithRetry(script: string, maxRetries = 3) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-nano',
         messages: [{ role: 'user', content: script }],
         timeout: 30000, // 30s
       });

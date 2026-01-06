@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Camera, Plus, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Camera, Plus, X, Settings, SparkleIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { Scene, parseSceneBreakdown, formatSceneBreakdownAsJSON } from "@/lib/types/scene"
 import { SceneCard } from "@/components/scene-card"
 import { SceneBreakdownHistory } from "@/components/scene-breakdown-history"
+import { ScenePromptConfig } from "@/components/scene-prompt-config"
 
 interface SceneBreakdownModalProps {
   ideaId: number
@@ -26,7 +27,28 @@ export function SceneBreakdownModal({
   const [isGenerating, setIsGenerating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [customPrompt, setCustomPrompt] = useState("")
+  const [patterns, setPatterns] = useState<Array<{ name: string; description: string }>>([])
+
+  useEffect(() => {
+    // Load saved config from localStorage
+    const savedPrompt = localStorage.getItem('sceneBreakdownPrompt')
+    const savedPatterns = localStorage.getItem('sceneBreakdownPatterns')
+
+    if (savedPrompt) {
+      setCustomPrompt(savedPrompt)
+    }
+
+    if (savedPatterns) {
+      try {
+        setPatterns(JSON.parse(savedPatterns))
+      } catch (e) {
+        console.error('Failed to parse saved patterns')
+      }
+    }
+  }, [])
 
   const handleGenerate = async () => {
     if (!session || isGenerating) return
@@ -45,6 +67,8 @@ export function SceneBreakdownModal({
           ideaId,
           script,
           language: 'indonesian',
+          customPrompt,
+          patterns,
         }),
       })
 
@@ -113,6 +137,12 @@ export function SceneBreakdownModal({
     setScenes(updatedScenes)
   }
 
+  const handleRestoreVersion = (restoredContent: string) => {
+    // Update state with restored content
+    setContent(restoredContent)
+    setScenes(parseSceneBreakdown(restoredContent))
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -126,9 +156,18 @@ export function SceneBreakdownModal({
               <span className="text-xs text-neutral-500">({scenes.length} scene{scenes.length !== 1 ? 's' : ''})</span>
             )}
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors p-2 rounded-md hover:bg-white/5">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowConfig(true)}
+              className="text-neutral-400 hover:text-white transition-colors p-2 rounded-md hover:bg-white/5"
+              title="Pengaturan"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors p-2 rounded-md hover:bg-white/5">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8">
@@ -154,7 +193,7 @@ export function SceneBreakdownModal({
               <p className="text-neutral-400 mb-6">Belum ada scene breakdown. Pilih cara membuat:</p>
               <div className="flex items-center justify-center gap-3">
                 <button onClick={handleGenerate} className="flex items-center gap-2 px-6 py-3 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-medium rounded-lg border border-red-600/20 transition-colors">
-                  <Camera className="w-4 h-4" />
+                  <SparkleIcon className="w-4 h-4" />
                   Buat dengan AI
                 </button>
                 <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-neutral-200 font-medium rounded-lg border border-white/10 transition-colors">
@@ -249,7 +288,7 @@ export function SceneBreakdownModal({
 
           {showHistory && content && !isEditing && (
             <div className="mt-6 pt-6 border-t border-white/10">
-              <SceneBreakdownHistory ideaId={ideaId} onRestore={() => window.location.reload()} />
+              <SceneBreakdownHistory ideaId={ideaId} onRestore={handleRestoreVersion} />
             </div>
           )}
         </div>
@@ -260,6 +299,28 @@ export function SceneBreakdownModal({
           </button>
         </div>
       </div>
+
+      {/* Config Modal */}
+      {showConfig && (
+        <ScenePromptConfig onClose={() => {
+          setShowConfig(false)
+          // Reload config after saving
+          const savedPrompt = localStorage.getItem('sceneBreakdownPrompt')
+          const savedPatterns = localStorage.getItem('sceneBreakdownPatterns')
+
+          if (savedPrompt) {
+            setCustomPrompt(savedPrompt)
+          }
+
+          if (savedPatterns) {
+            try {
+              setPatterns(JSON.parse(savedPatterns))
+            } catch (e) {
+              console.error('Failed to parse saved patterns')
+            }
+          }
+        }} />
+      )}
     </div>
   )
 }
