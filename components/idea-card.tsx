@@ -1,20 +1,13 @@
 "use client"
 
-import type { CSSProperties } from "react"
 import { formatRelativeTime } from "@/lib/time"
 
 interface IdeaCardProps {
   idea: any
   onOpen: (idea: any) => void
-  delay: number
 }
 
-export default function IdeaCard({ idea, onOpen, delay }: IdeaCardProps) {
-  const animationStyle: CSSProperties = {
-    animation: `slideUp 0.3s ease-out forwards`,
-    animationDelay: `${delay}s`,
-  }
-
+export default function IdeaCard({ idea, onOpen }: IdeaCardProps) {
   const timeAgo = idea.updated_at
     ? formatRelativeTime(idea.updated_at)
     : formatRelativeTime(idea.created_at || new Date().toISOString())
@@ -22,7 +15,6 @@ export default function IdeaCard({ idea, onOpen, delay }: IdeaCardProps) {
   return (
     <div
       onClick={() => onOpen(idea)}
-      style={animationStyle}
       className="glass-panel rounded-xl p-5 hover:border-rose-500/30 hover:bg-neutral-800/30 transition-all group cursor-pointer relative overflow-hidden bg-neutral-900/60 backdrop-blur-lg border border-white/5"
     >
       <div className="flex items-center gap-2 mb-3">

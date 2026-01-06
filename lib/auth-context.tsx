@@ -8,7 +8,10 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  coins: number
+  refreshCoins: () => Promise<void>
   signIn: (email: string) => Promise<{ error: AuthError | null }>
+  verifyOtp: (email: string, token: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
 }
 
@@ -18,17 +21,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [coins, setCoins] = useState(0)
+
+  const refreshCoins = async () => {
+    if (!session) return
+
+    try {
+      const response = await fetch('/api/user/coins', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCoins(data.coins || 0)
+      }
+    } catch (error) {
+      console.error('Failed to fetch coins:', error)
+    }
+  }
 
   useEffect(() => {
     // Get initial session and listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
 
         // Only set loading to false after initial session check
         if (event === 'INITIAL_SESSION') {
           setLoading(false)
+          // Fetch coins after session is established
+          if (session) {
+            await refreshCoins()
+          }
         }
       }
     )
@@ -40,8 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false
       },
+    })
+  }
+
+  const verifyOtp = async (email: string, token: string) => {
+    return await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
     })
   }
 
@@ -53,7 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    coins,
+    refreshCoins,
     signIn,
+    verifyOtp,
     signOut,
   }
 

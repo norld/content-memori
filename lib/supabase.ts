@@ -16,6 +16,8 @@ export type Idea = {
   user_id: string
   created_at?: string
   updated_at?: string
+  scene_breakdown?: string
+  scene_breakdown_generated_at?: string
 }
 
 export const ideasTable = 'ideas'

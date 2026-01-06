@@ -55,14 +55,14 @@ export default function ContentGrid({ ideas, onOpenDetail, loading = false }: Co
         </div>
       ) : viewMode === "list" ? (
         <div className="flex flex-col gap-2">
-          {ideas.map((idea, index) => (
-            <IdeaListItem key={idea.id} idea={idea} onOpen={onOpenDetail} index={index} />
+          {ideas.map((idea) => (
+            <IdeaListItem key={idea.id} idea={idea} onOpen={onOpenDetail} />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300">
-          {ideas.map((idea, index) => (
-            <IdeaCard key={idea.id} idea={idea} onOpen={onOpenDetail} delay={index * 0.05} />
+          {ideas.map((idea) => (
+            <IdeaCard key={idea.id} idea={idea} onOpen={onOpenDetail} />
           ))}
 
           {/* New Idea Placeholder */}
