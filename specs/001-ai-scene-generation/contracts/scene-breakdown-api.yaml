@@ -1,0 +1,406 @@
+openapi: 3.0.3
+info:
+  title: Scene Breakdown API
+  description: API for AI-powered scene breakdown generation in Content Memori
+  version: 1.0.0
+  contact:
+    name: Content Memori Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://content-memori.vercel.app/api
+    description: Production environment
+
+tags:
+  - name: Scene Breakdown
+    description: AI-powered scene breakdown operations
+
+paths:
+  /generate-scene-breakdown:
+    post:
+      tags:
+        - Scene Breakdown
+      summary: Generate scene breakdown from script
+      description: |
+        Uses OpenAI API to generate a structured scene breakdown from the provided script.
+        Returns a streaming response for real-time generation.
+
+        **Authentication**: Required (Supabase Auth session)
+        **Rate Limiting**: 10 concurrent requests max
+        **Timeout**: 30 seconds
+
+      security:
+        - SupabaseSession: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ideaId
+                - script
+                - language
+              properties:
+                ideaId:
+                  type: integer
+                  format: int64
+                  description: ID of the idea/draft to generate scene breakdown for
+                  example: 123
+                script:
+                  type: string
+                  minLength: 50
+                  maxLength: 5000
+                  description: Script content to generate scene breakdown from
+                  example: |
+                    INT. COFFEE SHOP - DAY
+
+                    JANE (30s) enters the coffee shop, looking tired. She approaches the counter.
+                language:
+                  type: string
+                  enum: [english, indonesian, spanish]
+                  default: english
+                  description: Language of the script and output scene breakdown
+                  example: english
+
+      responses:
+        '200':
+          description: Successful generation (streaming response)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+              example: |
+                Scene 1: Coffee Shop Interior
+
+                The scene opens in a cozy, warm coffee shop with soft natural light streaming through large windows...
+
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Unauthorized'
+
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Script too long (max 5000 characters)'
+
+        '429':
+          description: Too Many Requests - rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Rate limit exceeded. Please try again later.'
+
+        '500':
+          description: Internal Server Error - AI service failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Failed to generate scene breakdown. Please try again.'
+
+        '503':
+          description: Service Unavailable - AI service timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'AI service timeout. Please try again.'
+
+  /scene-breakdown:
+    put:
+      tags:
+        - Scene Breakdown
+      summary: Update scene breakdown (manual edit)
+      description: |
+        Updates the scene breakdown content for a specific idea.
+        Content is automatically sanitized to prevent XSS attacks.
+
+        **Authentication**: Required (Supabase Auth session)
+        **RLS**: Users can only update their own ideas
+
+      security:
+        - SupabaseSession: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ideaId
+                - content
+              properties:
+                ideaId:
+                  type: integer
+                  format: int64
+                  description: ID of the idea to update
+                  example: 123
+                content:
+                  type: string
+                  maxLength: 65535
+                  description: Sanitized HTML content of the scene breakdown
+                  example: |
+                    <p>Scene 1: Coffee Shop Interior</p>
+                    <p>The scene opens in a cozy, warm coffee shop...</p>
+
+      responses:
+        '200':
+          description: Scene breakdown updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: '2025-01-05T12:34:56.789Z'
+
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '403':
+          description: Forbidden - user does not own this idea
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'You do not have permission to update this idea'
+
+        '404':
+          description: Not found - idea does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Idea not found'
+
+  /scene-breakdown/history:
+    get:
+      tags:
+        - Scene Breakdown
+      summary: Get scene breakdown history
+      description: |
+        Retrieves the generation history for a specific idea.
+        Returns paginated list of previous versions.
+
+        **Authentication**: Required (Supabase Auth session)
+        **RLS**: Users can only view their own history
+
+      security:
+        - SupabaseSession: []
+
+      parameters:
+        - name: ideaId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the idea to get history for
+          example: 123
+
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of versions to return
+          example: 50
+
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of versions to skip (pagination)
+          example: 0
+
+      responses:
+        '200':
+          description: History retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SceneBreakdownVersion'
+                  total:
+                    type: integer
+                    description: Total number of versions
+                    example: 10
+
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '404':
+          description: Not found - idea does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /scene-breakdown/restore:
+    post:
+      tags:
+        - Scene Breakdown
+      summary: Restore scene breakdown from history
+      description: |
+        Restores a previous version of the scene breakdown from history.
+        Does NOT create a new history entry (simply restores content).
+
+        **Authentication**: Required (Supabase Auth session)
+        **RLS**: Users can only restore their own history
+
+      security:
+        - SupabaseSession: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ideaId
+                - version
+              properties:
+                ideaId:
+                  type: integer
+                  format: int64
+                  description: ID of the idea to restore
+                  example: 123
+                version:
+                  type: integer
+                  description: Version number to restore
+                  example: 5
+
+      responses:
+        '200':
+          description: Scene breakdown restored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  restored_at:
+                    type: string
+                    format: date-time
+                    example: '2025-01-05T12:34:56.789Z'
+
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '403':
+          description: Forbidden - user does not own this idea
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '404':
+          description: Not found - version does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Scene breakdown version not found'
+
+components:
+  securitySchemes:
+    SupabaseSession:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+      description: Supabase authentication session token
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: 'An error occurred while processing your request'
+
+    SceneBreakdownVersion:
+      type: object
+      required:
+        - id
+        - ideaId
+        - content
+        - generatedAt
+        - version
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for this history entry
+          example: 456
+        ideaId:
+          type: integer
+          format: int64
+          description: ID of the associated idea
+          example: 123
+        content:
+          type: string
+          description: Scene breakdown content (sanitized HTML)
+          example: |
+            <p>Scene 1: Coffee Shop Interior</p>
+            <p>The scene opens in a cozy, warm coffee shop...</p>
+        generatedAt:
+          type: string
+          format: date-time
+          description: When this version was generated
+          example: '2025-01-05T12:34:56.789Z'
+        version:
+          type: integer
+          description: Version number (monotonically increasing)
+          example: 3

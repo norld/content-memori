@@ -62,3 +62,10 @@ This is a Next.js 16 application using React 19, TypeScript, and Tailwind CSS v4
 - The project uses JSX transform (`react-jsx`) - no need to import React explicitly
 - ESLint extends Next.js recommended configs for TypeScript and Core Web Vitals
 - PostCSS is configured for Tailwind CSS v4 processing
+
+## Active Technologies
+- TypeScript 5.7 (strict mode enabled) (001-ai-scene-generation)
+- Supabase PostgreSQL with existing `ideas` table, new columns for scene breakdown and generation history (001-ai-scene-generation)
+
+## Recent Changes
+- 001-ai-scene-generation: Added TypeScript 5.7 (strict mode enabled)
