@@ -147,6 +147,7 @@ export default function Home() {
           title: updatedIdea.title,
           description: updatedIdea.description,
           type: updatedIdea.type,
+          status: updatedIdea.status,
           edited: "Yes",
         })
         .eq("id", updatedIdea.id)

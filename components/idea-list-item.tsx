@@ -1,6 +1,6 @@
 "use client"
 
-import type { Idea } from "@/lib/supabase"
+import type { Idea, SCRIPT_STATUSES } from "@/lib/supabase"
 import { formatRelativeTime } from "@/lib/time"
 
 interface IdeaListItemProps {
@@ -35,6 +35,13 @@ export default function IdeaListItem({ idea, onOpen }: IdeaListItemProps) {
       <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-neutral-400 flex-shrink-0">
         {idea.category}
       </div>
+
+      {/* Status Badge */}
+      {idea.status && (
+        <div className={`px-2 py-0.5 rounded-full text-[10px] border flex-shrink-0 ${SCRIPT_STATUSES[idea.status].color}`}>
+          {SCRIPT_STATUSES[idea.status].label}
+        </div>
+      )}
 
       {/* Time */}
       <span className="text-[10px] text-neutral-500 whitespace-nowrap flex-shrink-0">

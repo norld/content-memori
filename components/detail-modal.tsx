@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { X, Trash2, Sparkles, LucideCamera, ListCheckIcon } from "lucide-react"
-import type { Idea } from "@/lib/supabase"
+import type { Idea, ScriptStatus } from "@/lib/supabase"
+import { SCRIPT_STATUSES } from "@/lib/supabase"
 import { formatRelativeTime } from "@/lib/time"
 import { SceneBreakdownModal } from "@/components/scene-breakdown-modal"
 
@@ -17,6 +18,7 @@ export default function DetailModal({ idea, onClose, onDelete, onUpdate }: Detai
   const [title, setTitle] = useState(idea.title)
   const [description, setDescription] = useState(idea.description)
   const [type, setType] = useState(idea.type)
+  const [status, setStatus] = useState<ScriptStatus>(idea.status || 'scripted')
   const [showSceneBreakdownModal, setShowSceneBreakdownModal] = useState(false)
 
   const handleDelete = () => {
@@ -31,6 +33,7 @@ export default function DetailModal({ idea, onClose, onDelete, onUpdate }: Detai
       title,
       description,
       type,
+      status,
     })
     onClose()
   }
@@ -84,6 +87,25 @@ export default function DetailModal({ idea, onClose, onDelete, onUpdate }: Detai
                     <option>Newsletter</option>
                     <option>Social Media Post</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Status</label>
+                <div className="flex items-center gap-1.5">
+                  {(Object.keys(SCRIPT_STATUSES) as ScriptStatus[]).map((statusOption) => (
+                    <button
+                      key={statusOption}
+                      onClick={() => setStatus(statusOption)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+                        status === statusOption
+                          ? SCRIPT_STATUSES[statusOption].color
+                          : 'bg-white/5 text-neutral-500 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      {SCRIPT_STATUSES[statusOption].label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

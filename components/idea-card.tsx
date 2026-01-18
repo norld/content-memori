@@ -1,6 +1,7 @@
 "use client"
 
 import { formatRelativeTime } from "@/lib/time"
+import { SCRIPT_STATUSES } from "@/lib/supabase"
 
 interface IdeaCardProps {
   idea: any
@@ -26,7 +27,14 @@ export default function IdeaCard({ idea, onOpen }: IdeaCardProps) {
         <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed mb-4">{idea?.description || '-'}</p>
       </div>
       <div className="flex items-center justify-between pt-4 border-t border-white/5 transition-all">
-        <span className="text-[10px] text-neutral-500">{timeAgo}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-neutral-500">{timeAgo}</span>
+          {idea.status && (
+            <div className={`px-2 py-0.5 rounded-full text-[10px] border ${SCRIPT_STATUSES[idea.status].color}`}>
+              {SCRIPT_STATUSES[idea.status].label}
+            </div>
+          )}
+        </div>
         <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-neutral-400">
           {idea.category}
         </div>
